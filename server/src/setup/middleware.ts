@@ -1,6 +1,7 @@
-import express, { Express } from 'express';
+import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import logger from '../logger.js';
+import servicesDB from '../db/services.js';
 
 import os from 'os';
 
@@ -10,10 +11,10 @@ function getLocalIp(): string {
   const interfaces = os.networkInterfaces();
   for (const interfaceName in interfaces) {
     const networkInterface = interfaces[interfaceName];
-    if (!networkInterface) continue;
+    if (\!networkInterface) continue;
 
     for (const network of networkInterface) {
-      if (network.family === 'IPv4' && !network.internal) {
+      if (network.family === 'IPv4' && \!network.internal) {
         return network.address;
       }
     }
@@ -32,7 +33,7 @@ function getLocalIp(): string {
  * @returns True if the origin is allowed, false otherwise.
  */
 function isAllowedOrigin(origin: string | undefined): boolean {
-  if (!origin) {
+  if (\!origin) {
     return true;
   }
 
@@ -89,5 +90,30 @@ export default function (app: Express) {
     const endpoint = req.originalUrl;
     logger.debug(`${method} ${endpoint} - IP: ${clientIp}`);
     next();
+  });
+
+  // API key authentication
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    // Skip auth for health check endpoint
+    if (req.method === 'GET' && req.path === '/api/serverStatus') {
+      return next();
+    }
+
+    // Skip auth for non-API routes
+    if (\!req.path.startsWith('/api/')) {
+      return next();
+    }
+
+    const { enabled, key } = servicesDB.data.apiKey;
+    if (\!enabled) {
+      return next();
+    }
+
+    const authHeader = req.headers['authorization'];
+    if (\!authHeader || authHeader \!== `Bearer ${key}`) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    return next();
   });
 }

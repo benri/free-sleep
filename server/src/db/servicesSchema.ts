@@ -1,10 +1,14 @@
-// WARNING! - Any changes here MUST be the same between app/src/api & server/src/db/
+// WARNING\! - Any changes here MUST be the same between app/src/api & server/src/db/
 
 import { z } from 'zod';
 import { StatusInfoSchema } from '../routes/serverStatus/serverStatusSchema.js';
 
 
 export const ServicesSchema = z.object({
+  apiKey: z.object({
+    enabled: z.boolean(),
+    key: z.string(),
+  }),
   biometrics: z.object({
     enabled: z.boolean(),
     jobs: z.object({
