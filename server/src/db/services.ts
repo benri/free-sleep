@@ -7,6 +7,10 @@ import config from '../config.js';
 
 
 const defaultData: Services = {
+  apiKey: {
+    enabled: false,
+    key: '',
+  },
   sentryLogging: {
     enabled: false,
   },

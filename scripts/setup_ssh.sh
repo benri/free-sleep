@@ -28,8 +28,11 @@ ClientAliveCountMax 4
 ClientAliveInterval 15
 Compression no
 ListenAddress 0.0.0.0
-PasswordAuthentication yes
-PermitRootLogin yes
+PasswordAuthentication no
+PermitRootLogin prohibit-password
+MaxAuthTries 3
+AllowAgentForwarding no
+X11Forwarding no
 PermitTTY yes
 Port 8822
 PubkeyAuthentication yes
@@ -54,7 +57,7 @@ echo "Please paste your SSH public key below and press Enter:"
 read ssh_key
 echo "$ssh_key" >> "$AUTHORIZED_KEYS_FILE"
 
-chmod 644 "$AUTHORIZED_KEYS_FILE"
+chmod 600 "$AUTHORIZED_KEYS_FILE"
 chown root:root "$AUTHORIZED_KEYS_FILE"
 
 

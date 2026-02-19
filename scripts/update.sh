@@ -27,6 +27,7 @@ systemctl disable free-sleep
 
 # Unblock internet first
 sh /home/dac/free-sleep/scripts/unblock_internet_access.sh
+trap 'bash /home/dac/free-sleep/scripts/block_internet_access.sh 2>/dev/null || true' EXIT
 
 # If a free-sleep folder exists, back it up
 if [ -d /home/dac/free-sleep ]; then
@@ -35,8 +36,12 @@ if [ -d /home/dac/free-sleep ]; then
 fi
 
 echo "Attempting to reinstall free-sleep..."
-if /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/benri/free-sleep/main/scripts/install.sh)"; then
+INSTALL_URL="https://raw.githubusercontent.com/benri/free-sleep/main/scripts/install.sh"
+curl -fsSL -o /tmp/free-sleep-install.sh "$INSTALL_URL"
+echo "Downloaded installer checksum: $(sha256sum /tmp/free-sleep-install.sh)"
+if /bin/bash /tmp/free-sleep-install.sh; then
   echo "Reinstall successful."
+  rm -f /tmp/free-sleep-install.sh
   rm -rf "$BACKUP_PATH"
   if [ -d "$APP_DIR" ]; then
     rm -rf "$BACKUP_PATH"
@@ -47,6 +52,7 @@ if /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/benri/free-sleep
   fi
 else
   echo "Reinstall failed. Restoring from backup..."
+  rm -f /tmp/free-sleep-install.sh
   rm -rf /home/dac/free-sleep
   mv "$BACKUP_PATH" /home/dac/free-sleep
 fi

@@ -1,6 +1,7 @@
-import express, { Express } from 'express';
+import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import logger from '../logger.js';
+import servicesDB from '../db/services.js';
 
 import os from 'os';
 
@@ -89,5 +90,30 @@ export default function (app: Express) {
     const endpoint = req.originalUrl;
     logger.debug(`${method} ${endpoint} - IP: ${clientIp}`);
     next();
+  });
+
+  // API key authentication
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    // Skip auth for health check endpoint
+    if (req.method === 'GET' && req.path === '/api/serverStatus') {
+      return next();
+    }
+
+    // Skip auth for non-API routes
+    if (!req.path.startsWith('/api/')) {
+      return next();
+    }
+
+    const { enabled, key } = servicesDB.data.apiKey;
+    if (!enabled) {
+      return next();
+    }
+
+    const authHeader = req.headers['authorization'];
+    if (!authHeader || authHeader !== `Bearer ${key}`) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    return next();
   });
 }
