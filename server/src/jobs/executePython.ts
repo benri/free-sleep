@@ -1,5 +1,5 @@
 import logger from '../logger.js';
-import { exec } from 'child_process';
+import { spawn } from 'child_process';
 import fs from 'fs';
 const { promises: fsPromises } = fs;
 
@@ -18,19 +18,19 @@ export const executePythonScript = async ({ script, args = [] }: ExecutePythonSc
     return;
   }
 
-  const command = `${pythonExecutable} -B ${script} ${args.join(' ')}`;
-  logger.info(`Executing: ${command}`);
+  logger.info(`Executing: ${pythonExecutable} -B ${script} ${args.join(' ')}`);
 
-  exec(command, { env: { ...process.env } }, (error, stdout, stderr) => {
-    if (error) {
-      logger.error(`Execution error: ${error.message}`);
-      return;
-    }
-    if (stderr) {
-      logger.error(`Python stderr: ${stderr}`);
-    }
-    if (stdout) {
-      logger.info(`Python stdout: ${stdout}`);
-    }
+  const child = spawn(pythonExecutable, ['-B', script, ...args], {
+    env: { ...process.env },
+  });
+
+  child.stdout.on('data', (data) => {
+    logger.info(`Python stdout: ${data}`);
+  });
+  child.stderr.on('data', (data) => {
+    logger.error(`Python stderr: ${data}`);
+  });
+  child.on('error', (error) => {
+    logger.error(`Execution error: ${error.message}`);
   });
 };

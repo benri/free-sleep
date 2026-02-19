@@ -78,7 +78,7 @@ router.get('/:filename', async (req, res) => {
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
 
-  const filename = req.params.filename;
+  const filename = path.basename(req.params.filename);
 
   let logFilePath = null;
   for (const dir of LOGS_DIRS) {
