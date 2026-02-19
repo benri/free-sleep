@@ -37,7 +37,10 @@ if [ -d "/home/$USERNAME/.volta" ]; then
   echo "Volta is already installed for user '$USERNAME'."
 else
   echo "Volta is not installed. Installing for user '$USERNAME'..."
-  sudo -u "$USERNAME" bash -c 'curl https://get.volta.sh | bash'
+  curl -fsSL -o /tmp/volta-install.sh https://get.volta.sh
+  echo "Downloaded Volta installer checksum: $(sha256sum /tmp/volta-install.sh)"
+  sudo -u "$USERNAME" bash /tmp/volta-install.sh
+  rm -f /tmp/volta-install.sh
   # Ensure Volta environment variables are in the DAC user’s profile:
   if ! grep -q 'export VOLTA_HOME=' "/home/$USERNAME/.profile"; then
     echo -e '\nexport VOLTA_HOME="/home/dac/.volta"\nexport PATH="$VOLTA_HOME/bin:$PATH"\n' \
@@ -257,7 +260,7 @@ EOF
 
 echo "Attempting to update device time from Google..."
 # If the curl fails or is blocked, skip with a warning but don't fail the entire script
-if date_string="$(curl -s --head http://google.com | grep '^Date: ' | sed 's/Date: //g')" && [ -n "$date_string" ]; then
+if date_string="$(curl -s --head https://google.com | grep '^Date: ' | sed 's/Date: //g')" && [ -n "$date_string" ]; then
   date -s "$date_string" || echo "WARNING: Unable to update system time"
 else
   echo -e "\033[0;33mWARNING: Unable to retrieve date from Google... Skipping time update.\033[0m"
