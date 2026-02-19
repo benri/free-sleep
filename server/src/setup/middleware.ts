@@ -11,10 +11,10 @@ function getLocalIp(): string {
   const interfaces = os.networkInterfaces();
   for (const interfaceName in interfaces) {
     const networkInterface = interfaces[interfaceName];
-    if (\!networkInterface) continue;
+    if (!networkInterface) continue;
 
     for (const network of networkInterface) {
-      if (network.family === 'IPv4' && \!network.internal) {
+      if (network.family === 'IPv4' && !network.internal) {
         return network.address;
       }
     }
@@ -33,7 +33,7 @@ function getLocalIp(): string {
  * @returns True if the origin is allowed, false otherwise.
  */
 function isAllowedOrigin(origin: string | undefined): boolean {
-  if (\!origin) {
+  if (!origin) {
     return true;
   }
 
@@ -100,17 +100,17 @@ export default function (app: Express) {
     }
 
     // Skip auth for non-API routes
-    if (\!req.path.startsWith('/api/')) {
+    if (!req.path.startsWith('/api/')) {
       return next();
     }
 
     const { enabled, key } = servicesDB.data.apiKey;
-    if (\!enabled) {
+    if (!enabled) {
       return next();
     }
 
     const authHeader = req.headers['authorization'];
-    if (\!authHeader || authHeader \!== `Bearer ${key}`) {
+    if (!authHeader || authHeader !== `Bearer ${key}`) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
