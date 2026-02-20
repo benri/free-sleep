@@ -188,6 +188,15 @@ else
   echo -e "\033[33mWARNING: Prisma migrations failed! \033[0m"
 fi
 
+echo "Building server..."
+sudo -u "$USERNAME" bash -c "cd '$SERVER_DIR' && /home/$USERNAME/.volta/bin/npm run build:pr"
+echo "Server build complete."
+
+echo "Installing app dependencies..."
+sudo -u "$USERNAME" bash -c "cd '$REPO_DIR/app' && /home/$USERNAME/.volta/bin/npm install"
+echo "Building app..."
+sudo -u "$USERNAME" bash -c "cd '$REPO_DIR/app' && /home/$USERNAME/.volta/bin/npm run build"
+echo "App build complete."
 
 # Restart free-sleep-stream if it was running before
 if [ "$biometrics_enabled" = "true" ]; then

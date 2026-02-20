@@ -43,7 +43,7 @@ jobs:
 
       - name: Require clean working directory
         run: |
-          if ! git diff --exit-code -- ':!server/dist' ':!server/public'; then
+          if ! git diff --exit-code; then
             echo "Working tree dirty at end of job."
             exit 1
           fi

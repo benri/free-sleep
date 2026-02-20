@@ -16,6 +16,7 @@ import vitals from '../routes/metrics/vitals.js';
 import presence from '../routes/metrics/presence.js';
 import logs from '../routes/logs/logs.js';
 import serverStatus from '../routes/serverStatus/serverStatus.js';
+import auth from '../routes/auth/auth.js';
 import logger from '../logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -23,6 +24,7 @@ const __dirname = path.dirname(__filename);
 
 export default function (app: Express) {
   logger.debug('Registering routes...');
+  app.use('/api/auth', auth);
   app.use('/api/', alarm);
   app.use('/api/', deviceStatus);
   app.use('/api/', execute);

@@ -23,6 +23,8 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
 import LogsPage from './pages/DataPage/LogsPage/LogsPage.tsx';
 import StatusPage from './pages/StatusPage/StatusPage.tsx';
+import LoginPage from './pages/LoginPage/LoginPage.tsx';
+import AuthGuard from './components/AuthGuard.tsx';
 
 const darkTheme = createTheme({
   palette: {
@@ -71,7 +73,8 @@ const App = () => {
             />
             <BrowserRouter basename="/">
               <SentryRoutes>
-                <Route path="/" element={ <Layout/> }>
+                <Route path="/login" element={ <LoginPage/> }/>
+                <Route path="/" element={ <AuthGuard><Layout/></AuthGuard> }>
                   <Route index element={ <ControlTempPage/> }/>
                   <Route path="temperature" element={ <ControlTempPage/> }/>
                   <Route path="left" element={ <ControlTempPage/> }/>

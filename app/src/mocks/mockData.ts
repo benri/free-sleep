@@ -255,10 +255,6 @@ const createSettings = (): Settings => ({
 });
 
 const createServices = (): Services => ({
-  apiKey: {
-    enabled: false,
-    key: '',
-  },
   sentryLogging: {
     enabled: true,
   },

@@ -1,16 +1,14 @@
 // LowDB, stores the schedules in /persistent/free-sleep-data/lowdb/schedulesDB.json
 import _ from 'lodash';
+import { mkdirSync } from 'fs';
 import { Low } from 'lowdb';
 import { JSONFile } from 'lowdb/node';
 import { Services } from './servicesSchema.js';
 import config from '../config.js';
 
+mkdirSync(config.lowDbFolder, { recursive: true });
 
 const defaultData: Services = {
-  apiKey: {
-    enabled: false,
-    key: '',
-  },
   sentryLogging: {
     enabled: false,
   },

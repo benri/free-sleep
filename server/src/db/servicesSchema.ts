@@ -5,10 +5,6 @@ import { StatusInfoSchema } from '../routes/serverStatus/serverStatusSchema.js';
 
 
 export const ServicesSchema = z.object({
-  apiKey: z.object({
-    enabled: z.boolean(),
-    key: z.string(),
-  }),
   biometrics: z.object({
     enabled: z.boolean(),
     jobs: z.object({

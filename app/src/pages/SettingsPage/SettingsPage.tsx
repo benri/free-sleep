@@ -1,5 +1,5 @@
 import { DeepPartial } from 'ts-essentials';
-import { Typography, Box } from '@mui/material';
+import { Typography, Box, Button } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 
 import SideSettings from './SideSettings.tsx';
@@ -7,6 +7,7 @@ import PageContainer from '../PageContainer.tsx';
 import { Settings } from '@api/settingsSchema.ts';
 import { postSettings, useSettings } from '@api/settings.ts';
 import { useAppStore } from '@state/appStore.tsx';
+import { useAuthStore } from '@state/authStore.ts';
 import DailyPriming from './DailyPriming.tsx';
 import LicenseModal from './LicenseModal.tsx';
 import PrimeControl from './PrimeControl.tsx';
@@ -17,11 +18,13 @@ import FeaturesSection from './FeaturesSection/FeaturesSection.tsx';
 import Section from './Section.tsx';
 import DeviceSettingsSection from './DeviceSettingsSection/DeviceSettingsSection.tsx';
 import ErrorBoundary from '@components/ErrorBoundary.tsx';
+import UserManagement from './UserManagement.tsx';
 
 
 export default function SettingsPage() {
   const { data: settings, refetch } = useSettings();
   const { setIsUpdating } = useAppStore();
+  const clearToken = useAuthStore((s) => s.clearToken);
 
   const updateSettings = (settings: DeepPartial<Settings>) => {
     setIsUpdating(true);
@@ -74,12 +77,22 @@ export default function SettingsPage() {
           </Box>
         </Section>
       </ErrorBoundary>
+      <ErrorBoundary componentName='User management'>
+        <Section title="User Management">
+          <UserManagement />
+        </Section>
+      </ErrorBoundary>
       <ErrorBoundary componentName='Info section'>
         <DiscordLink/>
         <Donate/>
         <Divider/>
         <LicenseModal/>
       </ErrorBoundary>
+      <Box sx={ { mt: 3, mb: 2, display: 'flex', justifyContent: 'center' } }>
+        <Button variant="outlined" color="error" onClick={ clearToken }>
+          Logout
+        </Button>
+      </Box>
     </PageContainer>
   );
 }
