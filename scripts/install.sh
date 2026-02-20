@@ -4,34 +4,42 @@ set -euo pipefail
 
 # --------------------------------------------------------------------------------
 # Variables
-REPO_URL="https://github.com/benri/free-sleep/archive/refs/heads/main.zip"
-ZIP_FILE="free-sleep.zip"
 REPO_DIR="/home/dac/free-sleep"
 SERVER_DIR="$REPO_DIR/server"
 USERNAME="dac"
+GITHUB_REPO="benri/free-sleep"
 
 # --------------------------------------------------------------------------------
-# Download the repository
-echo "Downloading the repository..."
-curl -L -o "$ZIP_FILE" "$REPO_URL"
+# Download the latest release tarball
+echo "Fetching latest release info..."
+RELEASE_JSON=$(curl -s "https://api.github.com/repos/${GITHUB_REPO}/releases/latest")
+TARBALL_URL=$(echo "$RELEASE_JSON" | grep -o '"browser_download_url": *"[^"]*linux-arm64\.tar\.gz"' | head -1 | cut -d'"' -f4)
 
-echo ""
-echo "Unzipping the repository..."
-unzip -o -q "$ZIP_FILE"
-echo "Removing the zip file..."
-rm -f "$ZIP_FILE"
+if [ -z "$TARBALL_URL" ]; then
+  echo "ERROR: Could not find arm64 tarball in latest release."
+  echo "$RELEASE_JSON"
+  exit 1
+fi
 
-# Clean up existing directory and move new code into place
+RELEASE_TAG=$(echo "$RELEASE_JSON" | grep -o '"tag_name": *"[^"]*"' | head -1 | cut -d'"' -f4)
+echo "Downloading release $RELEASE_TAG..."
+echo "URL: $TARBALL_URL"
+
+TARBALL_FILE="/tmp/free-sleep-release.tar.gz"
+curl -L -o "$TARBALL_FILE" "$TARBALL_URL"
+
+# Clean up existing directory and extract release
 echo "Setting up the installation directory..."
 rm -rf "$REPO_DIR"
-mv free-sleep-main "$REPO_DIR"
-
+mkdir -p "$REPO_DIR"
+tar xzf "$TARBALL_FILE" -C "$REPO_DIR"
+rm -f "$TARBALL_FILE"
 
 chown -R "$USERNAME":"$USERNAME" "$REPO_DIR"
 
 # --------------------------------------------------------------------------------
 # Install or update Volta
-# - We check once. If it’s not installed, install it.
+# - We check once. If it's not installed, install it.
 echo "Checking if Volta is installed for user '$USERNAME'..."
 if [ -d "/home/$USERNAME/.volta" ]; then
   echo "Volta is already installed for user '$USERNAME'."
@@ -41,7 +49,7 @@ else
   echo "Downloaded Volta installer checksum: $(sha256sum /tmp/volta-install.sh)"
   sudo -u "$USERNAME" bash /tmp/volta-install.sh
   rm -f /tmp/volta-install.sh
-  # Ensure Volta environment variables are in the DAC user’s profile:
+  # Ensure Volta environment variables are in the DAC user's profile:
   if ! grep -q 'export VOLTA_HOME=' "/home/$USERNAME/.profile"; then
     echo -e '\nexport VOLTA_HOME="/home/dac/.volta"\nexport PATH="$VOLTA_HOME/bin:$PATH"\n' \
       >> "/home/$USERNAME/.profile"
@@ -60,6 +68,30 @@ sudo -u "$USERNAME" bash -c "source /home/$USERNAME/.profile && volta install no
 # Setup /persistent/free-sleep-data (migrate old configs, logs, etc.)
 mkdir -p /persistent/free-sleep-data/logs/
 mkdir -p /persistent/free-sleep-data/lowdb/
+
+# Move .env.pod to persistent storage if this is a first-time migration
+ENV_PERSISTENT="/persistent/free-sleep-data/.env.pod"
+if [ ! -f "$ENV_PERSISTENT" ]; then
+  if [ -f "$SERVER_DIR/.env.pod" ]; then
+    mv "$SERVER_DIR/.env.pod" "$ENV_PERSISTENT"
+    echo "Moved .env.pod to persistent storage"
+  elif [ -f "$SERVER_DIR/.env.sample" ]; then
+    cp "$SERVER_DIR/.env.sample" "$ENV_PERSISTENT"
+    echo "Created .env.pod from .env.sample in persistent storage"
+  else
+    # Fallback if .env.sample is missing
+    cat > "$ENV_PERSISTENT" <<ENVEOF
+ENV="prod"
+DATA_FOLDER="/persistent/free-sleep-data/"
+DATABASE_URL="file:/persistent/free-sleep-data/free-sleep.db"
+JWT_SECRET=
+SERVICE_TOKEN=
+ENVEOF
+    echo "Created default .env.pod in persistent storage"
+  fi
+fi
+# Symlink so dotenv -e .env.pod keeps working from server/
+ln -sf "$ENV_PERSISTENT" "$SERVER_DIR/.env.pod"
 
 SRC_FILE="/opt/eight/bin/frank.sh"
 DEST_FILE="/persistent/free-sleep-data/dac_sock_path.txt"
@@ -111,44 +143,7 @@ chmod 770 /persistent/free-sleep-data/
 chmod g+s /persistent/free-sleep-data/
 
 # --------------------------------------------------------------------------------
-# Install server dependencies
-
-BACKUP_PATH="/home/dac/free-sleep-backup/server/package-lock.json"
-NEW_PATH="/home/dac/free-sleep/server/package-lock.json"
-NODE_MODULES_BACKUP="/home/dac/free-sleep-backup/server/node_modules"
-NODE_MODULES_NEW="/home/dac/free-sleep/server/node_modules"
-
-echo "Reviewing npm dependencies for changes..."
-if [ -f "$BACKUP_PATH" ] && [ -f "$NEW_PATH" ]; then
-  BACKUP_HASH=$(sha256sum "$BACKUP_PATH" | awk '{print $1}')
-  NEW_HASH=$(sha256sum "$NEW_PATH" | awk '{print $1}')
-
-  echo "Backup hash: $BACKUP_HASH"
-  echo "New hash: $NEW_HASH"
-
-  if [ "$BACKUP_HASH" != "$NEW_HASH" ]; then
-    echo "package-lock.json changed — running npm install..."
-    sudo -u "$USERNAME" bash -c "cd '$SERVER_DIR' && /home/$USERNAME/.volta/bin/npm install"
-  else
-    echo "package-lock.json unchanged — restoring node_modules from backup..."
-    if [ -d "$NODE_MODULES_BACKUP" ]; then
-      mv "$NODE_MODULES_BACKUP" "$NODE_MODULES_NEW"
-      chown -R "$USERNAME:$USERNAME" "$NODE_MODULES_NEW" || true
-      echo "node_modules restored from backup."
-    else
-      echo "Backup node_modules not found, running npm install instead..."
-      sudo -u "$USERNAME" bash -c "cd '$SERVER_DIR' && /home/$USERNAME/.volta/bin/npm install"
-    fi
-  fi
-else
-  echo "One or both package-lock.json files missing, running npm install..."
-  sudo -u "$USERNAME" bash -c "cd '$SERVER_DIR' && /home/$USERNAME/.volta/bin/npm install"
-fi
-echo ""
-
-# --------------------------------------------------------------------------------
 # Run Prisma migrations
-
 
 # Stop the free-sleep-stream service if it was running
 # This is needed to close out the lock files for the SQLite file
@@ -181,22 +176,12 @@ rm -f /persistent/free-sleep-data/free-sleep.db-shm \
 migration_failed="false"
 
 echo "Running Prisma migrations..."
-if sudo -u "$USERNAME" bash -c "cd '$SERVER_DIR' && /home/$USERNAME/.volta/bin/npm run migrate deploy"; then
+if sudo -u "$USERNAME" bash -c "cd '$SERVER_DIR' && /home/$USERNAME/.volta/bin/npm run migrate:deploy"; then
   echo "Prisma migrations completed successfully."
 else
   migration_failed="true"
   echo -e "\033[33mWARNING: Prisma migrations failed! \033[0m"
 fi
-
-echo "Building server..."
-sudo -u "$USERNAME" bash -c "cd '$SERVER_DIR' && /home/$USERNAME/.volta/bin/npm run build:pr"
-echo "Server build complete."
-
-echo "Installing app dependencies..."
-sudo -u "$USERNAME" bash -c "cd '$REPO_DIR/app' && /home/$USERNAME/.volta/bin/npm install"
-echo "Building app..."
-sudo -u "$USERNAME" bash -c "cd '$REPO_DIR/app' && /home/$USERNAME/.volta/bin/npm run build"
-echo "App build complete."
 
 # Restart free-sleep-stream if it was running before
 if [ "$biometrics_enabled" = "true" ]; then

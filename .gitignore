@@ -24,3 +24,8 @@ server/public/
 /server/free-sleep-data/*
 
 !.gitkeep
+
+# Env files (created at install time or copied from .env.sample)
+server/.env.pod
+server/.env.local
+server/.env

@@ -38,13 +38,24 @@ if ! grep -q "^JWT_SECRET=.\+" "$ENV_FILE" 2>/dev/null; then
   echo "Generated JWT_SECRET in $ENV_FILE"
 fi
 
-# Create the admin user
+# Detect whether to use compiled JS (release) or TypeScript source (dev)
 cd "$SERVER_DIR"
-npx dotenv -e "$ENV_FILE" -- node --loader ts-node/esm src/auth/createAdmin.ts "$USERNAME" "$PASSWORD"
+if [ -f "dist/auth/createAdmin.js" ]; then
+  NODE_CMD="node"
+  ADMIN_SCRIPT="dist/auth/createAdmin.js"
+  TOKEN_SCRIPT="dist/auth/generateServiceToken.js"
+else
+  NODE_CMD="node --loader ts-node/esm"
+  ADMIN_SCRIPT="src/auth/createAdmin.ts"
+  TOKEN_SCRIPT="src/auth/generateServiceToken.ts"
+fi
+
+# Create the admin user
+npx dotenv -e "$ENV_FILE" -- $NODE_CMD "$ADMIN_SCRIPT" "$USERNAME" "$PASSWORD"
 
 # Generate SERVICE_TOKEN if not present
 if ! grep -q "^SERVICE_TOKEN=.\+" "$ENV_FILE" 2>/dev/null; then
-  TOKEN=$(npx dotenv -e "$ENV_FILE" -- node --loader ts-node/esm src/auth/generateServiceToken.ts)
+  TOKEN=$(npx dotenv -e "$ENV_FILE" -- $NODE_CMD "$TOKEN_SCRIPT")
   if grep -q "^SERVICE_TOKEN=" "$ENV_FILE" 2>/dev/null; then
     TMP_FILE=$(mktemp)
     sed "s/^SERVICE_TOKEN=.*/SERVICE_TOKEN=$TOKEN/" "$ENV_FILE" > "$TMP_FILE" && mv "$TMP_FILE" "$ENV_FILE"

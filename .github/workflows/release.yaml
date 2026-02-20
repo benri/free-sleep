@@ -1,0 +1,90 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build arm64 release
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: |
+            ./app/package-lock.json
+            ./server/package-lock.json
+
+      - name: Install dependencies (server)
+        working-directory: server
+        run: npm ci
+
+      - name: Install dependencies (app)
+        working-directory: app
+        run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: server
+        run: npx prisma generate
+
+      - name: Build server
+        working-directory: server
+        run: npx tsc
+
+      - name: Copy serverInfo.json to dist
+        run: cp server/src/serverInfo.json server/dist/serverInfo.json
+
+      - name: Build app
+        working-directory: app
+        run: VITE_ENV=prod npx tsc -b && npx vite build
+
+      - name: Prune server devDependencies
+        working-directory: server
+        run: npm prune --omit=dev
+
+      - name: Determine tag name
+        id: tag
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            echo "name=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=dev-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Package tarball
+        run: |
+          tar czf "free-sleep-${{ steps.tag.outputs.name }}-linux-arm64.tar.gz" \
+            server/dist/ \
+            server/public/ \
+            server/node_modules/ \
+            server/prisma/ \
+            server/package.json \
+            server/.env.sample \
+            scripts/ \
+            biometrics/ \
+            docs/
+
+      - name: Upload release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: free-sleep-${{ steps.tag.outputs.name }}-linux-arm64.tar.gz
+
+      - name: Upload artifact (workflow_dispatch)
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@v4
+        with:
+          name: free-sleep-${{ steps.tag.outputs.name }}-linux-arm64
+          path: free-sleep-${{ steps.tag.outputs.name }}-linux-arm64.tar.gz

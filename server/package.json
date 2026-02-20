@@ -12,6 +12,7 @@
     "dev:local": "dotenv -e .env.local -- nodemon --watch src --ext ts --exec \"node --loader ts-node/esm\" src/server.ts",
     "lint": "npx eslint src/ --ext .ts,.tsx",
     "migrate": "dotenv -e .env.pod -- npx prisma migrate dev --name ",
+    "migrate:deploy": "dotenv -e .env.pod -- npx prisma migrate deploy",
     "generate": "dotenv -e .env.pod -- npx prisma generate",
     "migrate:local": "dotenv -e .env.local -- npx prisma migrate dev --name ",
     "generate:local": "dotenv -e .env.local -- npx prisma generate"
@@ -41,6 +42,7 @@
     "node-schedule": "^2.1.0",
     "winston": "^3.17.0",
     "winston-transport": "^4.9.0",
+    "prisma": "^6.4.0",
     "zod": "^3.0.0"
   },
   "devDependencies": {
@@ -55,7 +57,6 @@
     "@typescript-eslint/parser": "^5.62.0",
     "eslint": "^8.57.0",
     "nodemon": "^3.1.0",
-    "prisma": "^6.4.0",
     "ts-essentials": "^10.0.0",
     "ts-node": "^10.9.0",
     "typescript": "^5.7.0"
