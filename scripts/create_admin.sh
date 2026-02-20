@@ -41,3 +41,15 @@ fi
 # Create the admin user
 cd "$SERVER_DIR"
 npx dotenv -e "$ENV_FILE" -- node --loader ts-node/esm src/auth/createAdmin.ts "$USERNAME" "$PASSWORD"
+
+# Generate SERVICE_TOKEN if not present
+if ! grep -q "^SERVICE_TOKEN=.\+" "$ENV_FILE" 2>/dev/null; then
+  TOKEN=$(npx dotenv -e "$ENV_FILE" -- node --loader ts-node/esm src/auth/generateServiceToken.ts)
+  if grep -q "^SERVICE_TOKEN=" "$ENV_FILE" 2>/dev/null; then
+    TMP_FILE=$(mktemp)
+    sed "s/^SERVICE_TOKEN=.*/SERVICE_TOKEN=$TOKEN/" "$ENV_FILE" > "$TMP_FILE" && mv "$TMP_FILE" "$ENV_FILE"
+  else
+    echo "SERVICE_TOKEN=$TOKEN" >> "$ENV_FILE"
+  fi
+  echo "Generated SERVICE_TOKEN in $ENV_FILE"
+fi

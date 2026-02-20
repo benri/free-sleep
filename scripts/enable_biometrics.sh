@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Load SERVICE_TOKEN from .env.pod
+SERVICE_TOKEN=$(grep '^SERVICE_TOKEN=' /home/dac/free-sleep/server/.env.pod 2>/dev/null | cut -d'=' -f2-)
+if [ -z "$SERVICE_TOKEN" ]; then
+  echo "WARNING: SERVICE_TOKEN not found in .env.pod, API calls may fail"
+fi
+
 python3 /home/dac/free-sleep/scripts/is_biometrics_installed.py
 result=$?
 
@@ -31,6 +37,7 @@ trap '
     echo ""
     curl -s -X POST http://127.0.0.1:3000/api/services \
       -H "Content-Type: application/json" \
+      -H "Authorization: Bearer $SERVICE_TOKEN" \
       -d "{
         \"biometrics\": {
           \"jobs\": {
@@ -54,6 +61,7 @@ sh /home/dac/free-sleep/scripts/setup_streamer_service.sh
 # Mark the installation status as healthy
 curl -X POST http://127.0.0.1:3000/api/services \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $SERVICE_TOKEN" \
   -d '{
     "biometrics": {
       "jobs": {

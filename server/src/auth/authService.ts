@@ -43,3 +43,10 @@ export async function listUsers() {
 export async function deleteUser(id: number) {
   return prisma.users.delete({ where: { id } });
 }
+
+export function generateServiceToken() {
+  return jwt.sign(
+    { userId: 0, username: 'service', role: 'service' },
+    JWT_SECRET,
+  );
+}
