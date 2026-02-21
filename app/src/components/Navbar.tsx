@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import BottomNavigation from '@mui/material/BottomNavigation';
@@ -7,6 +7,7 @@ import Toolbar from '@mui/material/Toolbar';
 import Button from '@mui/material/Button';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppStore } from '@state/appStore.tsx';
+import { useAuthStore } from '@state/authStore.ts';
 import { useTheme } from '@mui/material/styles';
 import { PAGES } from './pages';
 import freeSleepIcon from '../../public/free-sleep-icon.svg';
@@ -15,9 +16,14 @@ export default function Navbar() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { isUpdating } = useAppStore();
-  const theme = useTheme(); // Access the Material-UI theme
+  const user = useAuthStore((s) => s.user);
+  const theme = useTheme();
+  const visiblePages = useMemo(
+    () => PAGES.filter((p) => !p.adminOnly || user?.role === 'admin'),
+    [user?.role],
+  );
   const [mobileNavValue, setMobileNavValue] = React.useState(
-    PAGES.findIndex((page) => page.route === pathname)
+    visiblePages.findIndex((page) => page.route === pathname)
   );
 
   // Handle navigation for both desktop and mobile
@@ -30,7 +36,7 @@ export default function Navbar() {
     newValue: number
   ) => {
     setMobileNavValue(newValue);
-    handleNavigation(PAGES[newValue].route);
+    handleNavigation(visiblePages[newValue].route);
   };
 
   const gradient = `linear-gradient(
@@ -79,7 +85,7 @@ export default function Navbar() {
             <img src={ freeSleepIcon } alt="Join our Discord" width={ 45 } height={ 45 } />
           </div>
           <Box sx={ { display: 'flex', gap: 2 } }>
-            { PAGES.map(({ title, route }) => (
+            { visiblePages.map(({ title, route }) => (
               <Button
                 key={ route }
                 onClick={ () => handleNavigation(route) }
@@ -121,7 +127,7 @@ export default function Navbar() {
             },
           } }
         >
-          { PAGES.map(({ title, icon }, index) => (
+          { visiblePages.map(({ title, icon }, index) => (
             <BottomNavigationAction
               key={ index }
               icon={ icon }

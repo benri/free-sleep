@@ -5,11 +5,13 @@ import ThermostatIcon from '@mui/icons-material/Thermostat';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import SettingsIcon from '@mui/icons-material/Settings';
 import BugReportIcon from '@mui/icons-material/BugReport';
+import PeopleIcon from '@mui/icons-material/People';
 
-type Page = {
+export type Page = {
   title: string;
   route: string;
   icon: React.ReactElement;
+  adminOnly?: boolean;
 };
 
 function TemperatureIcon() {
@@ -28,4 +30,5 @@ export const PAGES: Page[] = [
   { title: 'Data', route: '/data', icon: <BarChartIcon/> },
   { title: 'Status', route: '/status', icon: <BugReportIcon/> },
   { title: 'Settings', route: '/settings', icon: <SettingsIcon/> },
+  { title: 'Users', route: '/users', icon: <PeopleIcon/>, adminOnly: true },
 ];

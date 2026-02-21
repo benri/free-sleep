@@ -18,8 +18,6 @@ import FeaturesSection from './FeaturesSection/FeaturesSection.tsx';
 import Section from './Section.tsx';
 import DeviceSettingsSection from './DeviceSettingsSection/DeviceSettingsSection.tsx';
 import ErrorBoundary from '@components/ErrorBoundary.tsx';
-import UserManagement from './UserManagement.tsx';
-
 
 export default function SettingsPage() {
   const { data: settings, refetch } = useSettings();
@@ -75,11 +73,6 @@ export default function SettingsPage() {
             If both sides are in away mode, no schedules will apply.
             </Typography>
           </Box>
-        </Section>
-      </ErrorBoundary>
-      <ErrorBoundary componentName='User management'>
-        <Section title="User Management">
-          <UserManagement />
         </Section>
       </ErrorBoundary>
       <ErrorBoundary componentName='Info section'>

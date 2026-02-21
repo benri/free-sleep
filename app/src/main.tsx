@@ -11,6 +11,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 
 import ControlTempPage from './pages/ControlTempPage/ControlTempPage';
 import SettingsPage from './pages/SettingsPage/SettingsPage';
+import UsersPage from './pages/UsersPage/UsersPage';
 import Layout from './components/Layout';
 import { AppStoreProvider } from '@state/appStore.tsx';
 import SchedulePage from './pages/SchedulePage/SchedulePage.tsx';
@@ -88,6 +89,7 @@ const App = () => {
                   </Route>
 
                   <Route path="settings" element={ <SettingsPage/> }/>
+                  <Route path="users" element={ <UsersPage/> }/>
                   <Route path="schedules" element={ <SchedulePage/> }/>
                 </Route>
               </SentryRoutes>

@@ -28,6 +28,9 @@ echo "URL: $TARBALL_URL"
 TARBALL_FILE="/tmp/free-sleep-release.tar.gz"
 curl -L -o "$TARBALL_FILE" "$TARBALL_URL"
 
+# Ensure we're not inside the directory we're about to delete
+cd /tmp
+
 # Clean up existing directory and extract release
 echo "Setting up the installation directory..."
 rm -rf "$REPO_DIR"

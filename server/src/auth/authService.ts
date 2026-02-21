@@ -5,7 +5,7 @@ import { prisma } from '../db/prisma.js';
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 const TOKEN_EXPIRY = '7d';
 
-export async function createUser(username: string, password: string, role = 'admin') {
+export async function createUser(username: string, password: string, role = 'user') {
   const hash = await bcrypt.hash(password, 10);
   return prisma.users.create({
     data: { username, password: hash, role },
@@ -37,6 +37,21 @@ export async function listUsers() {
   return prisma.users.findMany({
     select: { id: true, username: true, role: true, created_at: true },
     orderBy: { created_at: 'asc' },
+  });
+}
+
+export async function updateUser(id: number, data: { password?: string; role?: string }) {
+  const updateData: { password?: string; role?: string } = {};
+  if (data.password) {
+    updateData.password = await bcrypt.hash(data.password, 10);
+  }
+  if (data.role) {
+    updateData.role = data.role;
+  }
+  return prisma.users.update({
+    where: { id },
+    data: updateData,
+    select: { id: true, username: true, role: true, created_at: true },
   });
 }
 
